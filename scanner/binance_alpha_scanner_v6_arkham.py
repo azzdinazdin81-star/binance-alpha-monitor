@@ -2,8 +2,8 @@
 """
 Binance Alpha Scanner v6 — Hermes Radar + Arkham/Surf 筹码增强版
 
-新增三层数据：
-  1. Surf wallet-transfers  → 代币的链上资金流（谁在买/卖）
+    # 每4小时扫描一次
+    - cron: "0 */4 * * *"
   2. Surf wallet-labels-batch → 交易对手 Arkham 标签（交易所/VC/鲸鱼）
   3. 新评分维度「筹码动向」   → 直接影响 ACCUMULATION / DISTRIBUTION
 
