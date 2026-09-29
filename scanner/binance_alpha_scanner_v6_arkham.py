@@ -2178,84 +2178,43 @@ def generate_report_v6(premium, results, alpha_list, alerts, fear_greed, top_mov
 
 ---
 
-## 📊 市场温度
+# --- Market Info ---
+report += f"**BTC Binance:** ${float(premium.get('binance_btc',0)):,.0f}\n"
+report += f"**BTC Kraken:** ${float(premium.get('kraken_btc',0)):,.0f}\n"
+report += f"**Premium:** {float(premium.get('premium_pct',0)):+.2f}%\n"
+report += f"**Fear & Greed:** {float(fear_greed.get('value',0)):.0f}/100 ({fear_greed.get('signal','')})\n\n"
 
-| 指标 | 数值 | 信号 |
-|------|------|------|
-| BTC Binance | ${premium['binance_btc']:,.0f} | — |
-| BTC Kraken | ${premium['kraken_btc']:,.0f} | — |
-| 机构溢价 | **{premium['premium_pct']:+.2f}%** | {premium['signal']} |
-| **Fear & Greed** | **{fear_greed['value']}/100** | {fear_greed['signal']} |
-| Alpha 总数 | {len(alpha_list)} | — |
-| Score≥100 | {len([t for t in alpha_list if float(t.get('score', 0)) >= 100])} | — |
-| 🟢 筹码建仓信号 | {len(accum_signals)} 个 | — |
-| 🔴 筹码出货信号 | {len(dist_signals)} 个 | — |
+# --- Stats ---
+scores_100 = len([t for t in alpha_list if float(t.get('score', 0)) == 100])
+accum_count = len([a for a in alerts if 'accum' in a.get('smart_money_signal','')])
+dist_count = len([a for a in alerts if 'dist' in a.get('smart_money_signal','')])
+report += f"Total: {len(alpha_list)} | Alerts: {len(alerts)} | 100 Score: {scores_100} | Accum: {accum_count} | Dist: {dist_count}\n\n"
 
----
+# --- Alerts ---
+if alerts:
+    sorted_alerts = sorted(alerts, key=lambda x: x['score'], reverse=True)
+    for i, alert in enumerate(sorted_alerts[:10], 1):
+        sm_sig = alert.get('smart_money_signal', 'unknown')
+        sm_icon = "🟢" if "accum" in sm_sig else "🔴" if "dist" in sm_sig else "⚪"
+        report += f"{sm_icon} {i}. {alert['symbol']} - {alert['direction']} [{alert['grade']}] Score:{alert['score']}/100\n"
 
-## 🎯 B级以上警报（共{len(alerts)}条，含Arkham筹码信号）
+# --- Top Gainers ---
+report += "\n**Top Gainers (24h)**\n"
+for g in gainers[:10]:
+    try:
+        ch = float(g.get('change_24h_pct', 0))
+        report += f"- {g.get('symbol','N/A')} | {float(g.get('price_usd',0)):.4f} | +{ch:.1f}%\n"
+    except:
+        report += f"- {g.get('symbol','N/A')} | - | -\n"
 
-"""
-    if alerts:
-        sorted_alerts = sorted(alerts, key=lambda x: -x["score"])
-        for i, alert in enumerate(sorted_alerts[:10], 1):
-            sm_sig = alert.get("smart_money_signal", "unknown")
-            sm_icon = "🟢" if "accum" in sm_sig else ("🔴" if "dist" in sm_sig else "⚪")
-            report += f"### {i}. {alert['symbol']} — {alert['direction']} [{alert['grade']} {alert['score']}/100] {sm_icon}\n"
-            lines = alert['text'].split('\n')
-            for line in lines:
-                # 保留：标题行 + 证据内容行（含 "  链上:" "  筹码:" 缩进行）
-                is_title = any(k in line for k in ["【", "💰", "🏷️", "【评分】", "【证据】", "【失效】", "📈", "📉", "↔️"])
-                is_evidence_content = line.startswith("  ") and any(k in line for k in ["链上:", "筹码:", "CEX:", "衍生:", "技术:"])
-                is_top_wallet = "🟢 Top" in line or "🔴 Top" in line
-                if is_title or is_evidence_content or is_top_wallet:
-                    report += line + "\n"
-            report += "\n---\n"
-    else:
-        report += "_暂无 B+ 级警报_\n\n"
-
-    report += f"""## 📈📉 市场异动榜（surf market-ranking）
-
-### 🔼 Top Gainers
-| 代币 | 价格 | 24h涨跌 | 市值 |
-|------|------|---------|------|
-"""
-    for g in gainers[:10]:
-        try:
-            ch = float(g.get("change_24h_pct", 0))
-            arrow = "🔼" if ch > 0 else "🔽"
-            report += f"| {g.get('name', g.get('symbol','N/A'))} | ${float(g.get('price_usd',0)):.4f} | {arrow}{abs(ch):.1f}% | ${float(g.get('market_cap_usd',0))/1e6:.1f}M |\n"
-        except:
-            report += f"| {g.get('symbol','N/A')} | — | — | — |\n"
-
-    report += """
-### 🔽 Top Losers
-| 代币 | 价格 | 24h涨跌 | 市值 |
-|------|------|---------|------|
-"""
-    for l in losers[:10]:
-        try:
-            ch = float(l.get("change_24h_pct", 0))
-            arrow = "🔼" if ch > 0 else "🔽"
-            report += f"| {l.get('name', l.get('symbol','N/A'))} | ${float(l.get('price_usd',0)):.4f} | {arrow}{abs(ch):.1f}% | ${float(l.get('market_cap_usd',0))/1e6:.1f}M |\n"
-        except:
-            report += f"| {l.get('symbol','N/A')} | — | — | — |\n"
-
-    report += f"""
----
-
-## 📋 吸筹前期（Score≥100, 变化±10%）— 共{len(accumulation_early)}个
-
-| 代币 | Score | 24h变化 |
-|------|-------|---------|
-"""
-    for sym, score, change in accumulation_early[:15]:
-        report += f"| {sym} | {score:.0f} | {change:+.1f}% |\n"
-
-    report += """
----
-
-## 📖 评级说明
+# --- Top Losers ---
+report += "\n**Top Losers (24h)**\n"
+for l in losers[:10]:
+    try:
+        ch = float(l.get('change_24h_pct', 0))
+        report += f"- {l.get('symbol','N/A')} | {float(l.get('price_usd',0)):.4f} | {ch:.1f}%\n"
+    except:
+        report += f"- {l.get('symbol','N/A')} | - | -\n"
 
 | 等级 | 分数 | 动作 |
 |------|------|------|
