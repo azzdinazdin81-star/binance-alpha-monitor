@@ -21,12 +21,13 @@ from collections import defaultdict
 import os
 
 # ====== 配置 ======
-STATE_FILE = "/home/ubuntu/.hermes/scripts/alpha_scanner_state.json"
-OUTPUT_FILE = "/home/ubuntu/.hermes/scripts/alpha_scan_output.md"
-STATE_FILE_SCORES = "/home/ubuntu/.hermes/scripts/alpha_scanner_scores.json"
-HOLDER_STATE_FILE = "/home/ubuntu/.hermes/scripts/alpha_holder_state.json"
-REPLAY_FILE = "/home/ubuntu/.hermes/scripts/alpha_signal_replay.json"
-SMART_MONEY_STATE = "/home/ubuntu/.hermes/scripts/alpha_smart_money_state.json"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+STATE_FILE = os.path.join(BASE_DIR, "alpha_state.json")
+OUTPUT_FILE = os.path.join(BASE_DIR, "alpha_scan_result.json")
+STATE_FILE_SCORES = os.path.join(BASE_DIR, "alpha_scores.json")
+HOLDER_STATE_FILE = os.path.join(BASE_DIR, "holder_state.json")
+REPLAY_FILE = os.path.join(BASE_DIR, "alpha_signal_replay.json")
+SMART_MONEY_STATE = os.path.join(BASE_DIR, "smart_money_state.json")
 
 MIN_SCORE = 100
 MIN_LIQUIDITY = 50_000
